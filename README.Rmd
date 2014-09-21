@@ -1,0 +1,68 @@
+---
+title: "Samsung Project"
+author: "O.Ruppelt"
+date: "Sunday, September 21, 2014"
+output: html_document
+---
+
+COnnecting libraries to be used in step5
+```{r}
+library(plyr)
+library(reshape2)
+```
+
+Downloading datasets from working directory (datasets should be located in folder Samsung in working directory)
+
+```{r}
+y_test <- read.table("~/Samsung/test/y_test.txt", quote="\"")
+X_test <- read.table("~/Samsung/test/X_test.txt", quote="\"")
+subject_test <- read.table("~/Samsung/test/subject_test.txt", quote="\"")
+subject_train <- read.table("~/Samsung/train/subject_train.txt", quote="\"")
+y_train <- read.table("~/Samsung/train/y_train.txt", quote="\"")
+X_train <- read.table("~/Samsung/train/X_train.txt", quote="\"")
+features <- read.table("~/Samsung/features.txt", quote="\"")
+activity_labels <- read.table("~/Samsung/activity_labels.txt", quote="\"")
+```
+
+Merging data in one piece (Step 1). Subject id and activity id are added in the beginning of dataset 
+
+```{r}
+test_data<-cbind(subject_test,y_test,X_test)
+train_data<-cbind(subject_train, y_train, X_train)
+data<-rbind(test_data,train_data)
+```
+
+Step 4 is performing foe convenience of step 2. Features are converted to vector of row names with addition of two columns added earlier
+
+```{r}
+data_names<-as.vector(features$V2)
+names(data)<-c('Subject','Activity',data_names)
+```
+
+Step 2. Only columns that include mean and std are taken into new dataset together with first two variables
+
+```{r}
+te<- sort(c(1,2,grep('mean()', names(data)),grep('std()', names(data))))
+new_data<-data[,te]
+```
+
+Activity labels were sorted in ascending manner by their id, so there was no need to sort it one more time.
+New variable contains corresponding activity name. This is Step 4
+
+```{r}
+new_data$Activity_name<-activity_labels[new_data$Activity,2]
+```
+
+Step 5 uses reshape2 and plyr packages and their respective functions melt and ddply
+
+```{r}
+melt_data<-melt(new_data, id = c('Subject','Activity','Activity_name'))
+tidy_data<-ddply(melt_data, c('Subject','Activity','Activity_name', 'variable'), summarize, mean = mean(value))
+head(tidy_data)
+```
+
+Writng results into separate text file tidy_data.txt in your working directory
+
+```{r}
+write.table(tidy_data, file = '~/tidy_data.txt', row.names= FALSE)
+```
